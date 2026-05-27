@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Puchos por día</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --rojo: #c8102e;
+    --dorado: #d4a017;
+    --crema: #f5efe0;
+    --negro: #1a1008;
+    --humo: #8a7d6e;
+  }
+
+  body {
+    background: var(--negro);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    overflow: hidden;
+  }
+
+  /* Fondo textura humo */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 100%, rgba(200,16,46,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 40% at 30% 0%, rgba(212,160,23,0.06) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .widget {
+    position: relative;
+    z-index: 1;
+    width: min(340px, 95vw);
+    border: 2px solid var(--dorado);
+    background: linear-gradient(160deg, #221a0f 0%, #120c05 100%);
+    border-radius: 4px;
+    padding: 28px 24px 24px;
+    box-shadow:
+      0 0 0 1px rgba(212,160,23,0.15),
+      0 20px 60px rgba(0,0,0,0.8),
+      inset 0 1px 0 rgba(212,160,23,0.2);
+  }
+
+  /* Advertencia sanitaria falsa — estética cajetilla */
+  .advertencia {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--crema);
+    opacity: 0.35;
+    text-align: center;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(212,160,23,0.2);
+  }
+
+  .brand {
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .brand-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    letter-spacing: 0.08em;
+    color: var(--crema);
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(212,160,23,0.3);
+  }
+
+  .brand-sub {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--dorado);
+    opacity: 0.8;
+    margin-top: 2px;
+  }
+
+  /* Línea decorativa */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--dorado), transparent);
+    opacity: 0.4;
+  }
+  .divider-icon { color: var(--dorado); font-size: 12px; opacity: 0.7; }
+
+  /* Fecha */
+  .fecha {
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--humo);
+    margin-bottom: 20px;
+  }
+
+  /* Contador */
+  .contador-wrap {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .numero {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 96px;
+    line-height: 1;
+    color: var(--crema);
+    text-shadow:
+      0 0 20px rgba(200,16,46,0.4),
+      0 0 60px rgba(200,16,46,0.15);
+    transition: transform 0.1s ease, text-shadow 0.3s ease;
+    cursor: default;
+    user-select: none;
+  }
+
+  .numero.pulse {
+    transform: scale(1.08);
+    text-shadow:
+      0 0 30px rgba(200,16,46,0.7),
+      0 0 80px rgba(200,16,46,0.3);
+  }
+
+  .label-count {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--humo);
+    margin-top: -4px;
+  }
+
+  /* Cigarrillos visuales */
+  .cigarrillos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    min-height: 28px;
+    margin-bottom: 20px;
+    padding: 8px;
+    border: 1px solid rgba(212,160,23,0.12);
+    border-radius: 2px;
+    background: rgba(0,0,0,0.2);
+  }
+
+  .cigarrillo {
+    width: 18px;
+    height: 8px;
+    border-radius: 2px;
+    position: relative;
+    animation: aparecer 0.3s ease;
+    overflow: hidden;
+  }
+
+  .cigarrillo .cuerpo {
+    position: absolute;
+    left: 0; top: 0;
+    width: 75%; height: 100%;
+    background: linear-gradient(180deg, #f5efe0 0%, #e8dcc8 100%);
+    border-radius: 2px 0 0 2px;
+  }
+
+  .cigarrillo .filtro {
+    position: absolute;
+    right: 0; top: 0;
+    width: 25%; height: 100%;
+    background: linear-gradient(180deg, #c8a06a 0%, #a07040 100%);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .cigarrillo .brasa {
+    position: absolute;
+    left: -3px; top: 50%;
+    transform: translateY(-50%);
+    width: 4px; height: 4px;
+    background: var(--rojo);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--rojo), 0 0 12px rgba(200,16,46,0.5);
+    animation: brasa 1.5s ease-in-out infinite;
+  }
+
+  @keyframes aparecer {
+    from { transform: scale(0) rotate(-10deg); opacity: 0; }
+    to { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+
+  @keyframes brasa {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Botón principal */
+  .btn-pucho {
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--rojo) 0%, #9a0c22 100%);
+    border: none;
+    border-radius: 3px;
+    color: var(--crema);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+    box-shadow:
+      0 4px 20px rgba(200,16,46,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .btn-pucho::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .btn-pucho:active {
+    transform: scale(0.97) translateY(1px);
+    box-shadow: 0 2px 10px rgba(200,16,46,0.3);
+  }
+
+  .btn-pucho .emoji { font-size: 20px; vertical-align: middle; margin-right: 6px; }
+
+  /* Ripple */
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    transform: scale(0);
+    animation: ripple 0.5s linear;
+    pointer-events: none;
+  }
+  @keyframes ripple {
+    to { transform: scale(4); opacity: 0; }
+  }
+
+  /* Controles secundarios */
+  .controles {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .btn-sec {
+    flex: 1;
+    padding: 10px 8px;
+    background: transparent;
+    border: 1px solid rgba(212,160,23,0.25);
+    border-radius: 3px;
+    color: var(--humo);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-sec:active, .btn-sec:hover {
+    border-color: var(--dorado);
+    color: var(--dorado);
+    background: rgba(212,160,23,0.05);
+  }
+
+  /* Historial */
+  .historial {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(212,160,23,0.15);
+  }
+
+  .hist-titulo {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--humo);
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+
+  .hist-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 80px;
+    overflow-y: auto;
+  }
+
+  .hist-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--humo);
+    opacity: 0.7;
+    padding: 2px 0;
+  }
+
+  .hist-item .valor {
+    color: var(--dorado);
+    font-weight: 700;
+    opacity: 1;
+  }
+
+  /* Sheets status */
+  .sheets-status {
+    text-align: center;
+    font-size: 9px;
+    color: var(--humo);
+    opacity: 0.5;
+    margin-top: 12px;
+    letter-spacing: 0.1em;
+  }
+
+  .sheets-status.syncing { opacity: 1; color: var(--dorado); }
+  .sheets-status.ok { opacity: 1; color: #5cb85c; }
+  .sheets-status.error { opacity: 1; color: var(--rojo); }
+
+  /* Modal config */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.visible { display: flex; }
+
+  .modal {
+    background: linear-gradient(160deg, #221a0f 0%, #120c05 100%);
+    border: 1px solid var(--dorado);
+    border-radius: 4px;
+    padding: 24px;
+    width: min(320px, 92vw);
+    position: relative;
+  }
+
+  .modal h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--dorado);
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+
+  .modal p {
+    font-size: 10px;
+    color: var(--humo);
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+
+  .modal label {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--humo);
+    margin-bottom: 6px;
+  }
+
+  .modal input {
+    width: 100%;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(212,160,23,0.3);
+    border-radius: 3px;
+    padding: 10px 12px;
+    color: var(--crema);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    outline: none;
+    margin-bottom: 14px;
+  }
+
+  .modal input:focus { border-color: var(--dorado); }
+
+  .modal-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .btn-guardar {
+    flex: 2;
+    padding: 12px;
+    background: var(--dorado);
+    border: none;
+    border-radius: 3px;
+    color: var(--negro);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+  }
+
+  .btn-cancelar {
+    flex: 1;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid rgba(212,160,23,0.3);
+    border-radius: 3px;
+    color: var(--humo);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  .instrucciones {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(212,160,23,0.15);
+    border-radius: 3px;
+    padding: 12px;
+    margin-top: 12px;
+  }
+
+  .instrucciones h4 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    color: var(--dorado);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .instrucciones ol {
+    padding-left: 16px;
+    font-size: 10px;
+    color: var(--humo);
+    line-height: 1.8;
+  }
+
+  .instrucciones a {
+    color: var(--dorado);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.3); }
+</style>
+</head>
+<body>
+
+<div class="widget" id="widget">
+  <div class="advertencia">Fumar perjudica gravemente la salud — Min. de Salud</div>
+
+  <div class="brand">
+    <div class="brand-title">Puchos</div>
+    <div class="brand-sub">contador diario</div>
+  </div>
+
+  <div class="divider"><span class="divider-icon">✦</span></div>
+
+  <div class="fecha" id="fecha-display">—</div>
+
+  <div class="contador-wrap">
+    <div class="numero" id="numero">0</div>
+    <div class="label-count">cigarrillos hoy</div>
+  </div>
+
+  <div class="cigarrillos" id="cigarrillos-visual"></div>
+
+  <button class="btn-pucho" id="btn-main" onclick="sumarPucho(event)">
+    <span class="emoji">🚬</span> + UN PUCHO
+  </button>
+
+  <div class="controles">
+    <button class="btn-sec" onclick="restarPucho()">− Deshacer</button>
+    <button class="btn-sec" onclick="abrirConfig()">⚙ Google Sheets</button>
+  </div>
+
+  <div class="historial" id="historial">
+    <div class="hist-titulo">▸ Historial reciente</div>
+    <div class="hist-lista" id="hist-lista">
+      <div class="hist-item" style="opacity:0.4"><span>—</span><span>sin datos</span></div>
+    </div>
+  </div>
+
+  <div class="sheets-status" id="sheets-status">● Google Sheets: no configurado</div>
+</div>
+
+<!-- Modal configuración -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>🗒 Google Sheets</h3>
+    <p>Para guardar tus datos automáticamente necesitás configurar un Google Apps Script. Es gratis y tarda 3 minutos.</p>
+
+    <label>URL de tu Apps Script Web App</label>
+    <input type="url" id="input-url" placeholder="https://script.google.com/macros/s/..." />
+
+    <div class="instrucciones">
+      <h4>Cómo configurarlo:</h4>
+      <ol>
+        <li>Andá a <a href="https://script.google.com" target="_blank">script.google.com</a></li>
+        <li>Creá un proyecto nuevo</li>
+        <li>Pegá el código del script (ver abajo)</li>
+        <li>Hacé clic en "Implementar" → "Nueva implementación"</li>
+        <li>Tipo: "Aplicación web", acceso: "Cualquiera"</li>
+        <li>Copiá la URL generada y pegala arriba</li>
+      </ol>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-guardar" onclick="guardarConfig()">GUARDAR</button>
+      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── ESTADO ───────────────────────────────────────────
+const STORAGE_KEY = 'puchos_data';
+
+function hoy() {
+  return new Date().toLocaleDateString('es-AR', {
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  });
+}
+
+function cargarDatos() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  } catch { return {}; }
+}
+
+function guardarDatos(datos) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(datos));
+}
+
+function getContadorHoy() {
+  const datos = cargarDatos();
+  return datos[hoy()] || 0;
+}
+
+function setContadorHoy(n) {
+  const datos = cargarDatos();
+  datos[hoy()] = n;
+  guardarDatos(datos);
+}
+
+// ─── UI ───────────────────────────────────────────────
+function actualizarUI() {
+  const n = getContadorHoy();
+  const el = document.getElementById('numero');
+  el.textContent = n;
+
+  // Fecha
+  const fecha = new Date().toLocaleDateString('es-AR', {
+    weekday: 'long', day: 'numeric', month: 'long'
+  });
+  document.getElementById('fecha-display').textContent = fecha;
+
+  // Cigarrillos visuales (máx 20)
+  const vis = document.getElementById('cigarrillos-visual');
+  const mostrar = Math.min(n, 20);
+  vis.innerHTML = '';
+  for (let i = 0; i < mostrar; i++) {
+    const c = document.createElement('div');
+    c.className = 'cigarrillo';
+    c.innerHTML = '<div class="brasa"></div><div class="cuerpo"></div><div class="filtro"></div>';
+    vis.appendChild(c);
+  }
+  if (n > 20) {
+    const mas = document.createElement('div');
+    mas.style.cssText = 'color:var(--rojo);font-size:11px;align-self:center;font-family:IBM Plex Mono,monospace;font-weight:700';
+    mas.textContent = `+${n - 20} más`;
+    vis.appendChild(mas);
+  }
+
+  actualizarHistorial();
+}
+
+function actualizarHistorial() {
+  const datos = cargarDatos();
+  const lista = document.getElementById('hist-lista');
+  const keys = Object.keys(datos).sort().reverse().slice(0, 7);
+
+  if (keys.length === 0) {
+    lista.innerHTML = '<div class="hist-item" style="opacity:0.4"><span>—</span><span>sin datos</span></div>';
+    return;
+  }
+
+  lista.innerHTML = keys.map(k => {
+    const esHoy = k === hoy();
+    return `<div class="hist-item">
+      <span>${esHoy ? '▶ hoy' : k}</span>
+      <span class="valor">${datos[k]} puchos</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── ACCIONES ─────────────────────────────────────────
+function sumarPucho(e) {
+  const btn = document.getElementById('btn-main');
+  const n = document.getElementById('numero');
+
+  // Ripple
+  const rect = btn.getBoundingClientRect();
+  const x = (e.clientX || rect.left + rect.width/2) - rect.left;
+  const y = (e.clientY || rect.top + rect.height/2) - rect.top;
+  const ripple = document.createElement('div');
+  ripple.className = 'ripple';
+  ripple.style.cssText = `left:${x}px;top:${y}px;width:${rect.width}px;height:${rect.height}px;margin-left:-${rect.width/2}px;margin-top:-${rect.height/2}px`;
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 500);
+
+  // Pulse
+  n.classList.add('pulse');
+  setTimeout(() => n.classList.remove('pulse'), 200);
+
+  const nuevo = getContadorHoy() + 1;
+  setContadorHoy(nuevo);
+  actualizarUI();
+  sincronizarSheets(nuevo);
+}
+
+function restarPucho() {
+  const actual = getContadorHoy();
+  if (actual <= 0) return;
+  const nuevo = actual - 1;
+  setContadorHoy(nuevo);
+  actualizarUI();
+  sincronizarSheets(nuevo);
+}
+
+// ─── GOOGLE SHEETS ────────────────────────────────────
+function getScriptUrl() {
+  return localStorage.getItem('puchos_script_url') || '';
+}
+
+async function sincronizarSheets(count) {
+  const url = getScriptUrl();
+  if (!url) return;
+
+  const status = document.getElementById('sheets-status');
+  status.className = 'sheets-status syncing';
+  status.textContent = '● Sincronizando...';
+
+  try {
+    const payload = { fecha: hoy(), count: count, timestamp: new Date().toISOString() };
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    status.className = 'sheets-status ok';
+    status.textContent = '● Guardado en Sheets ✓';
+    setTimeout(() => {
+      status.className = 'sheets-status';
+      status.textContent = '● Google Sheets: conectado';
+    }, 3000);
+  } catch (err) {
+    status.className = 'sheets-status error';
+    status.textContent = '● Error al sincronizar';
+  }
+}
+
+// ─── CONFIG MODAL ─────────────────────────────────────
+function abrirConfig() {
+  document.getElementById('input-url').value = getScriptUrl();
+  document.getElementById('modal-overlay').classList.add('visible');
+}
+
+function cerrarModal() {
+  document.getElementById('modal-overlay').classList.remove('visible');
+}
+
+function guardarConfig() {
+  const url = document.getElementById('input-url').value.trim();
+  localStorage.setItem('puchos_script_url', url);
+  cerrarModal();
+  const status = document.getElementById('sheets-status');
+  if (url) {
+    status.className = 'sheets-status ok';
+    status.textContent = '● Google Sheets: conectado';
+  } else {
+    status.className = 'sheets-status';
+    status.textContent = '● Google Sheets: no configurado';
+  }
+}
+
+// ─── RESET DIARIO ─────────────────────────────────────
+// El contador es automáticamente por día (la clave es la fecha)
+// No se necesita reset manual, cada día empieza en 0
+
+// ─── INIT ─────────────────────────────────────────────
+window.addEventListener('load', () => {
+  actualizarUI();
+  if (getScriptUrl()) {
+    document.getElementById('sheets-status').className = 'sheets-status ok';
+    document.getElementById('sheets-status').textContent = '● Google Sheets: conectado';
+  }
+});
+
+// Cerrar modal al hacer click afuera
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModal();
+});
+</script>
+
+<!-- CÓDIGO PARA APPS SCRIPT (comentario para el usuario) -->
+<!--
+=== CÓDIGO PARA PEGAR EN GOOGLE APPS SCRIPT ===
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    
+    // Buscar si ya existe una fila para hoy
+    var values = sheet.getDataRange().getValues();
+    var rowIndex = -1;
+    for (var i = 1; i < values.length; i++) {
+      if (values[i][0] === data.fecha) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+    
+    if (rowIndex > 0) {
+      // Actualizar fila existente
+      sheet.getRange(rowIndex, 2).setValue(data.count);
+      sheet.getRange(rowIndex, 3).setValue(data.timestamp);
+    } else {
+      // Agregar encabezados si es la primera vez
+      if (sheet.getLastRow() === 0) {
+        sheet.appendRow(["Fecha", "Puchos", "Última actualización"]);
+      }
+      // Nueva fila
+      sheet.appendRow([data.fecha, data.count, data.timestamp]);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({status: "ok"}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status: "error", msg: err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+-->
+
+</body>
+</html>
